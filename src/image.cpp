@@ -28,8 +28,9 @@ int main(int argc, char* argv[])
 					 std::istreambuf_iterator<char>());
 
 	Mat res;
-	res = img.clone();
-	//steg(res, key);
+	//res = img.clone();
+	cvtColor(img, res, COLOR_RGB2GRAY);
+	steg(res, key);
 
 	if(argc >= 3)
 	{
