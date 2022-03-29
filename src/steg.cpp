@@ -18,8 +18,18 @@ int steg(Mat img, std::string key)
 			haar_2d(Block, level, img.type());
 			Block.convertTo(Block, CV_32F, 1.0);
 			SVDecomp(Block, S, U, VT, SVD::FULL_UV);
-			std::cout << S.at<float>(0, 0) << std::endl;
-			S.at<float>(0, 0) -= 1;
+			if(key.size()>(i*BLOCK_SIZE+j)/8)
+			{
+				std::cout << S.at<float>(0, 0) << std::endl;
+				//std::cout << (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8))) << std::endl;
+				if (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))
+					if(!((int)(S.at<float>(0,0))%2))
+						S.at<float>(0,0)+=1;
+				else if (((int)(S.at<float>(0,0))%2))
+					S.at<float>(0,0)-=1;
+				std::cout << S.at<float>(0, 0) << std::endl;
+			}
+			//std::cout << S.at<float>(0, 0) << std::endl;
 			Mat_<float> tmp = U*Mat::diag(S)*VT;
 			tmp.convertTo(Block, img.type(), 1);
 			haar_2d_inverse(Block, level, img.type());
