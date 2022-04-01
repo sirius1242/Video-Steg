@@ -10,11 +10,13 @@ using namespace cv;
 
 int main(int argc, char* argv[])
 {
+	/*
 	if (argc < 3)
 	{
 		std::cerr << "Wrong command format!" << std::endl;
 		return 1;
 	}
+	*/
 	std::string image_path = samples::findFile(argv[1]);
 	Mat img = imread(image_path, IMREAD_COLOR);
 
@@ -23,18 +25,27 @@ int main(int argc, char* argv[])
 		std::cerr << "Could not read the image: " << image_path << std::endl;
 		return 1;
 	}
-	std::ifstream fkey(argv[2]);
-	std::string key((std::istreambuf_iterator<char>(fkey)),
-					 std::istreambuf_iterator<char>());
 
 	Mat res;
 	//res = img.clone();
 	cvtColor(img, res, COLOR_RGB2GRAY);
-	steg(res, key);
-
-	if(argc >= 3)
+	if(argc > 2)
 	{
-		imwrite(argv[3], res);
-		std::cout << "steged image saved to: " << argv[3] << std::endl;
+		std::ifstream fkey(argv[2]);
+		std::string key((std::istreambuf_iterator<char>(fkey)),
+						std::istreambuf_iterator<char>());
+		steg(res, key);
+		if(argc >= 3)
+		{
+			imwrite(argv[3], res);
+			std::cout << "steged image saved to: " << argv[3] << std::endl;
+		}
 	}
+	else
+	{
+		std::cout << "decoding" << std::endl;
+		std::string key = solve(res);
+		std::cout << key << std::endl;
+	}
+	return 0;
 }

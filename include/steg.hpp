@@ -5,6 +5,7 @@
 
 #include "dwt.hpp"
 #define BLOCK_SIZE 8
+#define LEVEL 1
 
-int steg(cv::Mat img, std::string key);
+void steg(cv::Mat img, std::string key);
 std::string solve(cv::Mat img);
