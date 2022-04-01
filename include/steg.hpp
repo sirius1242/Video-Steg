@@ -2,6 +2,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/opencv.hpp>
+#include <gsl/gsl_wavelet2d.h>
 
 #include "dwt.hpp"
 #define BLOCK_SIZE 8

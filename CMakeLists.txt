@@ -3,7 +3,9 @@ cmake_minimum_required(VERSION 3.22)
 project(VideoSteg)
 
 find_package(OpenCV REQUIRED)
+find_package(GSL REQUIRED)
 SET(OpenCV_LIBS opencv_core opencv_highgui opencv_imgproc opencv_imgcodecs)
+SET(GSL_LIBS gsl)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 include_directories(
@@ -19,4 +21,4 @@ file(GLOB all_SRCS
         )
 
 add_executable(steg ${all_SRCS})
-target_link_libraries(steg ${OpenCV_LIBS})
+target_link_libraries(steg ${OpenCV_LIBS} ${GSL_LIBS})
