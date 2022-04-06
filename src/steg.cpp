@@ -5,7 +5,7 @@ using namespace cv;;
 gsl_wavelet *w;
 gsl_wavelet_workspace *work;
 
-void steg(Mat img, std::string key)
+Mat steg(Mat img, std::string key)
 {
 	int type=img.type();
 
@@ -17,13 +17,13 @@ void steg(Mat img, std::string key)
 		for(int j=0;j<img.cols/BLOCK_SIZE; j++)
 		{
 			//Mat Block = Mat::zeros(BLOCK_SIZE, BLOCK_SIZE, CV_8UC3);
-			//std::cout << Block << std::endl;
 			Rect roi(i*BLOCK_SIZE, j*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 			Mat_<double> Block = img(roi);
 			//img(roi).copyTo(Block);
 			Mat_<double> S, U, VT;
 			//haar_2d(Block, LEVEL, img.type());
 			//Block.convertTo(Block, CV_64F, 1.0);
+			//std::cout << Block << std::endl;
 			double *data = Block.ptr<double>();
 			gsl_wavelet2d_transform_forward(w, data, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, work);
 			SVDecomp(Block, S, U, VT, SVD::FULL_UV);
@@ -31,15 +31,22 @@ void steg(Mat img, std::string key)
 			{
 				//std::cout << (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8))) << std::endl;
 				//std::cout << S.at<double>(0) << std::endl;
+				/*
 				if (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))
 				{
 					//std::cout << (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8))) << std::endl;
-					if(((int)(S.at<double>(0)))%2==0)
-						S.at<double>(0)+=1;
+					if(((int)(S.at<double>(0))>>SHIFT)%2==0)
+						S.at<double>(0)+=1<<SHIFT;
 				}
 				else if (((int)(S.at<double>(0)))%2)
-					S.at<double>(0)-=1;
-				//std::cout << S.at<double>(0) << std::endl;
+					S.at<double>(0)-=1<<SHIFT;
+				*/
+				int tmp = (int)S.at<double>(0);
+				if (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))
+					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q+1)%2)*Q;
+				else
+					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q)%2)*Q;
+				std::cout << S.at<double>(0) << ":" << ((key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))?"1":"0") << std::endl;
 			}
 			//std::cout << S.at<float>(0, 0) << std::endl;
 			Block = U*Mat::diag(S)*VT;
@@ -54,6 +61,7 @@ void steg(Mat img, std::string key)
 	gsl_wavelet_free(w);
 	gsl_wavelet_workspace_free(work);
 	img.convertTo(img, type);
+	return img;
 }
 
 std::string solve(Mat img)
@@ -69,9 +77,9 @@ std::string solve(Mat img)
 		for(int j=0;j<img.cols/BLOCK_SIZE; j++)
 		{
 			//Mat Block = Mat::zeros(BLOCK_SIZE, BLOCK_SIZE, CV_8UC3);
-			//std::cout << Block << std::endl;
 			Rect roi(i*BLOCK_SIZE, j*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 			Mat_<double> Block = img(roi);
+			//std::cout << Block << std::endl;
 			//img(roi).copyTo(Block);
 			Mat_<double> S, U, VT;
 			//haar_2d(Block, LEVEL, img.type());
@@ -80,16 +88,21 @@ std::string solve(Mat img)
 			gsl_wavelet2d_transform_forward(w, data, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, work);
 			SVDecomp(Block, S, U, VT, SVD::FULL_UV);
 			//std::cout << (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8))) << std::endl;
-			std::cout << S.at<double>(0,0) << std::endl;
 			//std::cout << (int)S.at<float>(0,0)%2 << std::endl;
-			if(((int)(S.at<double>(0)))%2)
+			/*
+			if(((int)(S.at<double>(0))>>SHIFT)%2)
 			{
 				tmp += (0x80 >> ((i*BLOCK_SIZE+j)%8));
 				//std::cout << (0x80 >> ((i*BLOCK_SIZE+j)%8)) << std::endl;
 			}
+			*/
+			double Si = S.at<double>(0);
+			std::cout << S.at<double>(0) << ":" << ((int)floor((Si/Q)+0.5)%2) << std::endl;
+			if((int)floor((Si/Q)+0.5)%2)
+				tmp += (0x80 >> ((i*BLOCK_SIZE+j)%8));
 			if((i*BLOCK_SIZE+j)%8==7)
 			{
-				//std::cout << (int)tmp << std::endl;
+				//std::cout << "tmp" << (int)tmp << std::endl;
 				res+=tmp;
 				tmp = 0;
 			}

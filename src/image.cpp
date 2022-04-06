@@ -34,7 +34,7 @@ int main(int argc, char* argv[])
 		std::ifstream fkey(argv[2]);
 		std::string key((std::istreambuf_iterator<char>(fkey)),
 						std::istreambuf_iterator<char>());
-		steg(res, key);
+		res = steg(res, key);
 		if(argc >= 3)
 		{
 			imwrite(argv[3], res);
