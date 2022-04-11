@@ -18,14 +18,16 @@ Mat steg(Mat img, std::string key)
 		{
 			//Mat Block = Mat::zeros(BLOCK_SIZE, BLOCK_SIZE, CV_8UC3);
 			Rect roi(i*BLOCK_SIZE, j*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-			Mat_<double> Block = img(roi);
-			//img(roi).copyTo(Block);
+			Mat_<double> Block; //= img(roi);
+			img(roi).copyTo(Block);
 			Mat_<double> S, U, VT;
 			//haar_2d(Block, LEVEL, img.type());
 			//Block.convertTo(Block, CV_64F, 1.0);
 			//std::cout << Block << std::endl;
+			Block = Block.reshape(0,1);
 			double *data = Block.ptr<double>();
 			gsl_wavelet2d_transform_forward(w, data, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, work);
+			Block = Block.reshape(0, BLOCK_SIZE);
 			SVDecomp(Block, S, U, VT, SVD::FULL_UV);
 			if(key.size()>(i*BLOCK_SIZE+j)/8)
 			{
@@ -46,11 +48,13 @@ Mat steg(Mat img, std::string key)
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q+1)%2)*Q;
 				else
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q)%2)*Q;
-				std::cout << S.at<double>(0) << ":" << ((key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))?"1":"0") << std::endl;
+				//std::cout << S.at<double>(0) << ":" << ((key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))?"1":"0") << std::endl;
+				std::cout << S.at<double>(0) << std::endl;
 			}
-			//std::cout << S.at<float>(0, 0) << std::endl;
 			Block = U*Mat::diag(S)*VT;
+			Block = Block.reshape(0,1);
 			gsl_wavelet2d_transform_inverse(w, data, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, work);
+			Block = Block.reshape(0, BLOCK_SIZE);
 			//Block.convertTo(Block, img.type(), 1);
 			//haar_2d_inverse(Block, LEVEL, img.type());
 			//std::cout << Block << std::endl;
@@ -78,14 +82,16 @@ std::string solve(Mat img)
 		{
 			//Mat Block = Mat::zeros(BLOCK_SIZE, BLOCK_SIZE, CV_8UC3);
 			Rect roi(i*BLOCK_SIZE, j*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
-			Mat_<double> Block = img(roi);
+			Mat_<double> Block;// = img(roi);
 			//std::cout << Block << std::endl;
-			//img(roi).copyTo(Block);
+			img(roi).copyTo(Block);
 			Mat_<double> S, U, VT;
 			//haar_2d(Block, LEVEL, img.type());
 			Block.convertTo(Block, CV_64F, 1.0);
 			double *data = Block.ptr<double>();
+			Block = Block.reshape(0,1);
 			gsl_wavelet2d_transform_forward(w, data, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, work);
+			Block = Block.reshape(0, BLOCK_SIZE);
 			SVDecomp(Block, S, U, VT, SVD::FULL_UV);
 			//std::cout << (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8))) << std::endl;
 			//std::cout << (int)S.at<float>(0,0)%2 << std::endl;
