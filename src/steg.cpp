@@ -12,9 +12,11 @@ Mat steg(Mat img, std::string key)
 	w = gsl_wavelet_alloc(gsl_wavelet_daubechies, 4);
 	work = gsl_wavelet_workspace_alloc(BLOCK_SIZE*BLOCK_SIZE);
 	img.convertTo(img, CV_64F, 1.0);
-	for(int i=0; i<img.rows/BLOCK_SIZE; i++)
+	int bncol = img.cols/BLOCK_SIZE;
+	int bnrow = img.rows/BLOCK_SIZE;
+	for(int i=0; i<bnrow; i++)
 	{
-		for(int j=0;j<img.cols/BLOCK_SIZE; j++)
+		for(int j=0;j<bncol; j++)
 		{
 			//Mat Block = Mat::zeros(BLOCK_SIZE, BLOCK_SIZE, CV_8UC3);
 			Rect roi(i*BLOCK_SIZE, j*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
@@ -29,7 +31,7 @@ Mat steg(Mat img, std::string key)
 			gsl_wavelet2d_transform_forward(w, data, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, work);
 			Block = Block.reshape(0, BLOCK_SIZE);
 			SVDecomp(Block, S, U, VT, SVD::FULL_UV);
-			if(key.size()>(i*BLOCK_SIZE+j)/8)
+			if(key.size()>(i*bncol+j)/8)
 			{
 				//std::cout << (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8))) << std::endl;
 				//std::cout << S.at<double>(0) << std::endl;
@@ -44,12 +46,12 @@ Mat steg(Mat img, std::string key)
 					S.at<double>(0)-=1<<SHIFT;
 				*/
 				int tmp = (int)S.at<double>(0);
-				if (key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))
+				if (key[(i*bncol+j)/8] & (0x80 >> ((i*bncol+j)%8)))
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q+1)%2)*Q;
 				else
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q)%2)*Q;
 				//std::cout << S.at<double>(0) << ":" << ((key[(i*BLOCK_SIZE+j)/8] & (0x80 >> ((i*BLOCK_SIZE+j)%8)))?"1":"0") << std::endl;
-				std::cout << S.at<double>(0) << std::endl;
+				//std::cout << S.at<double>(0) << std::endl;
 			}
 			Block = U*Mat::diag(S)*VT;
 			Block = Block.reshape(0,1);
@@ -103,7 +105,7 @@ std::string solve(Mat img)
 			}
 			*/
 			double Si = S.at<double>(0);
-			std::cout << S.at<double>(0) << ":" << ((int)floor((Si/Q)+0.5)%2) << std::endl;
+			//std::cout << S.at<double>(0) << ":" << ((int)floor((Si/Q)+0.5)%2) << std::endl;
 			if((int)floor((Si/Q)+0.5)%2)
 				tmp += (0x80 >> ((i*BLOCK_SIZE+j)%8));
 			if((i*BLOCK_SIZE+j)%8==7)
