@@ -34,6 +34,8 @@ int main(int argc, char* argv[])
 		std::ifstream fkey(argv[2]);
 		std::string key((std::istreambuf_iterator<char>(fkey)),
 						std::istreambuf_iterator<char>());
+		//std::cout << hamming_encode(key) << std::endl;
+		key = hamming_encode(key);
 		res = steg(res, key);
 		if(argc >= 3)
 		{

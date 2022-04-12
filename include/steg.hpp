@@ -4,6 +4,8 @@
 #include <opencv2/opencv.hpp>
 #include <gsl/gsl_wavelet2d.h>
 
+#include "ecc.hpp"
+
 #define BLOCK_SIZE 8
 #define Q 32
 
