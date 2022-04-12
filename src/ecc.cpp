@@ -48,7 +48,6 @@ std::string hamming_decode(std::string src)
 {
 	unsigned char tmp[3] = {0, 0, 0};
 	std::string res;
-	int count=0;
 	for(int i=0;i<src.size();i+=3)
 	{
 		tmp[0] = src[i];
@@ -80,20 +79,26 @@ std::string hamming_decode(std::string src)
 				if(tmp[(p+base-1)/8]&1<<(p+base-1)%8)
 				{
 					if(!bin[x][k])
-						b_err += k+1;
+						b_err += p;
 				}
 				else if(bin[x][k])
-					b_err += k+1;
+					b_err += p;
 			}
 			if(b_err&&(k=err_tab[b_err-1])>=0) // if two or more error checking bit is wrong
 			{
-				std::cout << "wrong: " << b_err << std::endl;
-				if(tmp[(b_err+base-1)/8] & 1<<(b_err+base-1)%8) // reverse the error bit
-					cache -= 1<<k;
+				if(b_err>12)
+					std::cout << "error correct failed!" << std::endl;
 				else
-					cache += 1<<k;
+				{
+					std::cout << "wrong bit position: " << b_err << ":" << k << std::endl;
+					if(tmp[(b_err+base-1)/8] & 1<<(b_err+base-1)%8) // reverse the error bit
+						cache -= 1<<k;
+					else
+						cache += 1<<k;
+				}
 			}
 			res += cache;
+			//std::cout << i << ":" << cache << std::endl;
 		}
 	}
 	return res;
