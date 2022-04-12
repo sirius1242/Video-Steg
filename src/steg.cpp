@@ -5,7 +5,7 @@ using namespace cv;;
 gsl_wavelet *w;
 gsl_wavelet_workspace *work;
 
-Mat steg(Mat img, std::string key)
+Mat steg(Mat img, std::string key, int keysize)
 {
 	int type=img.type();
 
@@ -27,7 +27,7 @@ Mat steg(Mat img, std::string key)
 			gsl_wavelet2d_transform_forward(w, data, BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE, work);
 			Block = Block.reshape(0, BLOCK_SIZE); // convert back for SVDecomp
 			SVDecomp(Block, S, U, VT, SVD::FULL_UV);
-			if(key.size()>(i*bncol+j)/8)
+			if(keysize>(i*bncol+j)/8)
 			{
 				int tmp = (int)S.at<double>(0);
 				if (key[(i*bncol+j)/8] & (0x80 >> ((i*bncol+j)%8))) // QIM for robust
@@ -78,6 +78,12 @@ std::string solve(Mat img)
 			if((i*BLOCK_SIZE+j)%8==7)
 			{
 				res+=tmp;
+				if(!tmp)
+				{
+					gsl_wavelet_free(w);
+					gsl_wavelet_workspace_free(work);
+					return res;
+				}
 				tmp = 0;
 			}
 		}
