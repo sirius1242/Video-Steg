@@ -22,7 +22,7 @@ std::string hamming_encode(std::string src) // (12,8) hamming code
 		{
 			int p=1<<j;
 			if(bin[x][j])
-				tmp[(p+base-1)/8]+=1<<(p+base-1)%8;
+				tmp[(p+base-1)/8]+=1<<(p+base-1)%8;// wrote the error checking bit
 		}
 		if(base)
 		{
@@ -62,20 +62,39 @@ std::string hamming_decode(std::string src)
 			int base=j*12;
 			int x = 0; // xor result
 			int p;
+			int k;
 			unsigned char cache=0; // char cache for result
-			for(int k=0;k<8;k++)
+			int b_err = 0; // the bit that error occured
+			for(k=0;k<8;k++) // recover the message without checking error
 			{
 				p = tab[k];
 				if(tmp[(p+base-1)/8] & 1<<(p+base-1)%8)
 				{
-					x ^= 1<<(p+base-1)%8;
+					x ^= p;
 					cache += 1<<k;
 				}
 			}
+			for(k=0;k<4;k++) // compare error checking bit
+			{
+				p=1<<k;
+				if(tmp[(p+base-1)/8]&1<<(p+base-1)%8)
+				{
+					if(!bin[x][k])
+						b_err += k+1;
+				}
+				else if(bin[x][k])
+					b_err += k+1;
+			}
+			if(b_err&&(k=err_tab[b_err-1])>=0) // if two or more error checking bit is wrong
+			{
+				std::cout << "wrong: " << b_err << std::endl;
+				if(tmp[(b_err+base-1)/8] & 1<<(b_err+base-1)%8) // reverse the error bit
+					cache -= 1<<k;
+				else
+					cache += 1<<k;
+			}
 			res += cache;
-			//std::cout << j << ":" << cache << std::endl;
 		}
-		//std::cout << res << std::endl;
 	}
 	return res;
 }
