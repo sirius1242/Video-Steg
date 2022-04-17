@@ -18,7 +18,7 @@ Mat steg(Mat img, std::string key, int keysize)
 	{
 		for(int j=0;j<bncol; j++)
 		{
-			Rect roi(i*BLOCK_SIZE, j*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+			Rect roi(j*BLOCK_SIZE, i*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 			Mat_<double> Block; //= img(roi);
 			img(roi).copyTo(Block);
 			Mat_<double> S, U, VT;
@@ -34,7 +34,7 @@ Mat steg(Mat img, std::string key, int keysize)
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q+1)%2)*Q;
 				else
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q)%2)*Q;
-				//std::cout << S.at<double>(0) << std::endl;
+				std::cout << S.at<double>(0) << std::endl;
 			}
 			Block = U*Mat::diag(S)*VT;
 			Block = Block.reshape(0,1);
@@ -61,7 +61,7 @@ std::string solve(Mat img)
 	{
 		for(int j=0;j<img.cols/BLOCK_SIZE; j++)
 		{
-			Rect roi(i*BLOCK_SIZE, j*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+			Rect roi(j*BLOCK_SIZE, i*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 			Mat_<double> Block;// = img(roi);
 			img(roi).copyTo(Block);
 			Mat_<double> S, U, VT;
