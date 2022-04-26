@@ -1,22 +1,172 @@
 #include<iostream>
+#include<fstream>
 
 extern "C"{
 #include<libavcodec/avcodec.h>
 #include<libavformat/avformat.h>
 #include<libswscale/swscale.h>
+#include<libavutil/opt.h>
 }
 
 #include "steg.hpp"
+
+AVFormatContext *pOutFmtCtx = NULL;
+const AVOutputFormat *pOutFmt = NULL;
+//AVCodecParameters *pOutCodecPara = NULL;
+AVCodecParameters *pCodecPara = NULL;
+//AVCodecContext *pOutCodeCtx = NULL;
+AVCodecContext *pCodeCtx = NULL;
+//const AVCodec *pOutCodec = NULL;
+const AVCodec *pCodec = NULL;
+AVFrame *pOutFrame = NULL;
+AVStream *pOutStream = NULL;
+AVPacket *pOutPacket = NULL;
+std::ofstream destFile;
+
+int encode(AVCodecContext *enc_ctx, AVFrame *frame)
+{
+	int ret;
+	AVPacket pkt;
+
+	if(frame)
+		//std::cout << "Send frame " << frame->pts << PRId64 << std::endl;
+		printf("Send frame %3"PRId64"\n", frame->pts);
+
+	ret = avcodec_send_frame(enc_ctx, frame);
+	if(ret < 0)
+	{
+		std::cerr << ret << std::endl;
+		std::cerr << "Error sending a frame for encoding" << std::endl;
+		exit(-1);
+	}
+
+	av_init_packet(&pkt);
+	pkt.data = NULL;
+	pkt.size = 0;
+	while(ret >= 0)
+	{
+		ret = avcodec_receive_packet(enc_ctx, &pkt);
+		if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+			return 0;
+		else if(ret < 0)
+		{
+			std::cerr << "Error during encoding" << std::endl;
+			exit(-1);
+		}
+
+		printf("Write packet %3"PRId64" (size=%5d)\n", pkt.pts, pkt.size);
+		//std::cout << "Writing packet " << pkt->pts << PRId64 << "(size=" << pkt->size << ")" << std::endl;
+		destFile << pkt.data;
+		av_packet_unref(&pkt);
+	}
+}
+int wfile_init(char filename[], int height, int width, int bitrate, int fpsrate)
+{
+	destFile.open(filename);
+	pOutFmt = av_guess_format(nullptr, filename, nullptr);
+	if(!pOutFmt)
+	{
+		std::cerr << "can't create output format!" << std::endl;
+		return -1;
+	}
+	if(avformat_alloc_output_context2(&pOutFmtCtx, pOutFmt, nullptr, filename))
+	{
+		std::cerr << "can't create output context!" << std::endl;
+		return -1;
+	}
+
+	/*
+	pOutCodec = avcodec_find_encoder(pOutFmt->video_codec);
+	if(!pOutCodec)
+	{
+		std::cerr << "can't create codec!" << std::endl;
+		return -1;
+	}
+	*/
+	pOutStream = avformat_new_stream(pOutFmtCtx, pCodec);
+	if(!pOutStream)
+	{
+		std::cerr << "can't find format!" << std::endl;
+		return -1;
+	}
+	/*
+	pOutCodeCtx = avcodec_alloc_context3(pOutCodec);
+	if(!pOutCodeCtx)
+	{
+		std::cerr << "can't create codec context!" << std::endl;
+		return -1;
+	}
+	*/
+	//pOutStream->codecpar->codec_id = pOutFmt->video_codec;
+	pOutStream->codecpar->codec_id = pCodeCtx->codec_id;
+	pOutStream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+	pOutStream->codecpar->width = width;
+	pOutStream->codecpar->height = height;
+	pOutStream->codecpar->format = AV_PIX_FMT_YUV420P;
+	pOutStream->codecpar->bit_rate = bitrate*1000;
+
+	/*
+	avcodec_parameters_to_context(pOutCodeCtx, pOutStream->codecpar);
+	pOutCodeCtx->time_base = {1, fpsrate};
+	pOutCodeCtx->max_b_frames = 2;
+	pOutCodeCtx->gop_size = 12;
+	if(pOutStream->codecpar->codec_id == AV_CODEC_ID_H264)
+	{
+		av_opt_set(pOutCodeCtx, "preset", "ultrafast", 0);
+	}
+	if(pOutFmtCtx->oformat->flags & AVFMT_GLOBALHEADER)
+	{
+		pOutCodeCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+	}
+	avcodec_parameters_from_context(pOutStream->codecpar, pOutCodeCtx);
+	if(avcodec_open2(pOutCodeCtx, pOutCodec, NULL) < 0)
+	{
+		std::cerr << "Failed to open codec!" << std::endl;
+		return -1;
+	}
+	*/
+	if(!(pOutFmt->flags & AVFMT_NOFILE))
+		if(avio_open(&pOutFmtCtx->pb, filename, AVIO_FLAG_WRITE) < 0)
+		{
+			std::cerr << "Failed to open file!" << std::endl;
+			return -1;
+		}
+	if(avformat_write_header(pOutFmtCtx, NULL) < 0)
+	{
+		std::cerr << "Failed to write header!" << std::endl;
+		return -1;
+	}
+
+	av_dump_format(pOutFmtCtx, 0, filename, 1);
+	return 0;
+	/*
+	avformat_alloc_output_context2(&pFormatCtx, 0, "mp4", filename);
+	if(!pFormatCtx)
+	{
+		std::cerr << "Could not open video file!" << std::endl;
+		return -1;
+	}
+	pOutFmt = pFormatCtx->oformat;
+	if(pOutFmt->video_codec != AV_CODEC_ID_NULL)
+	{
+		if(!)
+	}
+	*/
+}
 
 int main(int argc, char* argv[])
 {
 	AVFormatContext *pFormatCtx = NULL;
 	int i, videostream;
-	AVCodecParameters *pCodecPara = NULL;
-	AVCodecContext *pCodeCtx = NULL;
-	const AVCodec *pCodec = NULL;
+	//AVCodecParameters *pCodecPara = NULL;
+	//AVCodecContext *pCodeCtx = NULL;
+	//const AVCodec *pCodec = NULL;
 	AVFrame *pFrame = NULL;
 	AVPacket packet;
+	uint8_t endcode[] = { 0, 0, 1, 0xb7 };
+	int write=0;
+	if(argc >= 3)
+		write = 1;
 
 	if(avformat_open_input(&pFormatCtx, argv[1], NULL, NULL)!=0)
 	{
@@ -53,6 +203,9 @@ int main(int argc, char* argv[])
 
 	int width = pCodeCtx->width;
 	int height = pCodeCtx->height;
+	if(write)
+		wfile_init(argv[2], height, width, pCodeCtx->bit_rate, pCodeCtx->time_base.den);
+	int cnt = 0;
 	while(av_read_frame(pFormatCtx, &packet) >= 0)
 	{
 		if(packet.stream_index == videostream)
@@ -61,9 +214,47 @@ int main(int argc, char* argv[])
 			while(avcodec_receive_frame(pCodeCtx, pFrame) == 0)
 			{
 				//steg(cv::Mat(pFrame->data[0]), key, keysize);
-				std::cout << width << "x" << height << std::endl;
-				steg(cv::Mat(height, width, CV_8U, pFrame->data[0]), "test", 5);
+				//std::cout << width << "x" << height << std::endl;
+				cv::Mat tmp = steg(cv::Mat(height, width, CV_8U, pFrame->data[0]), "test", 5);
+				if(write)
+				{
+					pOutFrame = av_frame_alloc();
+					if(!pOutFrame)
+					{
+						std::cerr << "can't allocate video frame!" << std::endl;
+						return -1;
+					}
+					pOutFrame->format = AV_PIX_FMT_YUV420P;
+					pOutFrame->width = width;
+					pOutFrame->height = height;
+					if(av_frame_get_buffer(pOutFrame, 0) < 0)
+					{
+						std::cerr << "can't get frame buffer!" << std::endl;
+						return -1;
+					}
+
+					//av_init_packet(&OutPacket);
+					//OutPacket.data = NULL;
+					//OutPacket.size = 0;
+					if(av_frame_make_writable(pOutFrame) < 0)
+					{
+						std::cerr << "can't make frame writable!" << std::endl;
+						return -1;
+					}
+					pOutFrame->data[0] = tmp.data;
+					pOutFrame->data[1] = pFrame->data[1];
+					pOutFrame->data[2] = pFrame->data[2];
+					pOutFrame->pts = cnt++;
+					encode(pCodeCtx, pOutFrame);
+				}
 			}
+		}
+		if(write)
+		{
+			encode(pCodeCtx, NULL);
+			if(pCodec->id == AV_CODEC_ID_MPEG1VIDEO||pCodec->id == AV_CODEC_ID_MPEG2VIDEO)
+				destFile << endcode;
+			destFile.close();
 		}
 	}
 
