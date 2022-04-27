@@ -34,7 +34,7 @@ Mat steg(Mat img, std::string key, int keysize)
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q+1)%2)*Q;
 				else
 					S.at<double>(0) = (floor(tmp/Q)+(int)floor(tmp/Q)%2)*Q;
-				std::cout << S.at<double>(0) << std::endl;
+				//std::cout << S.at<double>(0) << std::endl;
 			}
 			Block = U*Mat::diag(S)*VT;
 			Block = Block.reshape(0,1);
