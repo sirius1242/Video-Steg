@@ -14,15 +14,14 @@ extern "C"{
 //const AVOutputFormat *pOutFmt = NULL;
 //AVCodecParameters *pOutCodecPara = NULL;
 //AVCodecParameters *pCodecPara = NULL;
-AVCodecContext *pOutCodeCtx = NULL;
+//AVCodecContext *pOutCodeCtx = NULL;
 //AVCodecContext *pCodeCtx = NULL;
-const AVCodec *pOutCodec = NULL;
+//const AVCodec *pOutCodec = NULL;
 //const AVCodec *pCodec = NULL;
-AVFrame *pOutFrame = NULL;
-AVStream *pOutStream = NULL;
-std::ofstream destFile;
+//AVFrame *pOutFrame = NULL;
+//AVStream *pOutStream = NULL;
 
-int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt)
+int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, std::ofstream &destFile)
 {
 	int ret;
 	//AVPacket pkt;
@@ -31,11 +30,11 @@ int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt)
 		//std::cout << "Send frame " << frame->pts << PRId64 << std::endl;
 		printf("Send frame %3" PRId64 "\n", frame->pts);
 
+	//avcodec_flush_buffers(enc_ctx);
 	ret = avcodec_send_frame(enc_ctx, frame);
 	if(ret < 0)
 	{
-		std::cerr << ret << std::endl;
-		std::cerr << "Error sending a frame for encoding" << std::endl;
+		std::cerr << "Error sending a frame for encoding: " << ret << std::endl;
 		exit(1);
 	}
 
@@ -57,7 +56,8 @@ int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt)
 
 		printf("Write packet %3" PRId64 " (size=%5d)\n", pkt->pts, pkt->size);
 		//std::cout << "Writing packet " << pkt->pts << PRId64 << "(size=" << pkt->size << ")" << std::endl;
-		destFile << pkt->data;
+		//destFile << *pkt->data;
+		destFile.write(reinterpret_cast<char *>(pkt->data), pkt->size);
 		av_packet_unref(pkt);
 	}
 }
@@ -155,6 +155,7 @@ int main(int argc, char* argv[])
 	const AVCodec *pOutCodec = NULL;
 	AVFrame *pOutFrame = NULL;
 	AVPacket *pOutPacket = NULL;
+	std::ofstream destFile;
 
 	int write=0;
 	if(argc >= 3)
@@ -205,7 +206,6 @@ int main(int argc, char* argv[])
 	int height = pCodeCtx->height;
 	if(write)
 	{
-		destFile.open(argv[2]);
 		//pOutCodec = avcodec_find_encoder_by_name(pCodec->name);
 		pOutCodec = avcodec_find_encoder(pCodec->id);
 		if(!pOutCodec)
@@ -222,8 +222,8 @@ int main(int argc, char* argv[])
 		pOutCodeCtx->width = pCodeCtx->width;
 		pOutCodeCtx->height = pCodeCtx->height;
 		pOutCodeCtx->bit_rate = pCodeCtx->bit_rate;
-		pOutCodeCtx->time_base = (AVRational){1, pCodeCtx->time_base.den};
-		pOutCodeCtx->framerate = (AVRational){pCodeCtx->framerate.num, 1};
+		pOutCodeCtx->time_base = (AVRational){1, 25};
+		pOutCodeCtx->framerate = (AVRational){25, 1};
 		pOutCodeCtx->gop_size = pCodeCtx->gop_size;
 		pOutCodeCtx->max_b_frames = pCodeCtx->max_b_frames;
 		//pOutCodeCtx->pix_fmt = pCodeCtx->pix_fmt;
@@ -236,6 +236,7 @@ int main(int argc, char* argv[])
 			return -1;
 		}
 		//wfile_init(argv[2], height, width, pCodeCtx->bit_rate, pCodeCtx->time_base.den, pCodec, pCodeCtx);
+		destFile.open(argv[3], std::ios::binary);
 		pOutFrame = av_frame_alloc();
 		if(!pOutFrame)
 		{
@@ -274,26 +275,29 @@ int main(int argc, char* argv[])
 						std::cerr << "can't make frame writable!" << std::endl;
 						return -1;
 					}
+					/*
 					pOutFrame->data[0] = tmp.data;
 					pOutFrame->data[1] = pFrame->data[1];
 					pOutFrame->data[2] = pFrame->data[2];
-					/*
+					*/
 					memcpy(pOutFrame->data[0], tmp.data, height*width*sizeof(uchar));
 					memcpy(pOutFrame->data[1], pFrame->data[1], height*width*sizeof(uchar)/4);
 					memcpy(pOutFrame->data[2], pFrame->data[2], height*width*sizeof(uchar)/4);
-					*/
-					pOutFrame->pts = cnt++;
-					encode(pCodeCtx, pOutFrame, pOutPacket);
+					pOutFrame->pts = ++cnt;
+					encode(pOutCodeCtx, pOutFrame, pOutPacket, destFile);
 				}
 			}
 		}
-		if(write)
-		{
-			encode(pCodeCtx, NULL, pOutPacket);
-			if(pCodec->id == AV_CODEC_ID_MPEG1VIDEO||pCodec->id == AV_CODEC_ID_MPEG2VIDEO)
-				destFile << endcode;
-			destFile.close();
-		}
+	}
+	if(write)
+	{
+		encode(pOutCodeCtx, NULL, pOutPacket, destFile);
+		if(pCodec->id == AV_CODEC_ID_MPEG1VIDEO||pCodec->id == AV_CODEC_ID_MPEG2VIDEO)
+			destFile << endcode;
+		destFile.close();
+		avcodec_free_context(&pOutCodeCtx);
+		av_frame_free(&pOutFrame);
+		av_packet_free(&pOutPacket);
 	}
 
 	av_packet_unref(&packet);
