@@ -263,7 +263,7 @@ int main(int argc, char* argv[])
 			{
 				//steg(cv::Mat(pFrame->data[0]), key, keysize);
 				//std::cout << width << "x" << height << std::endl;
-				cv::Mat tmp = steg(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8U, pFrame->data[0]), "test", 5);
+				cv::Mat tmp = steg(cv::Mat(pFrame->height, pFrame->width, CV_8U, pFrame->data[0]), "test", 5);
 				if(write)
 				{
 					fflush(stdout);
@@ -283,12 +283,15 @@ int main(int argc, char* argv[])
 					memcpy(pOutFrame->data[1], pFrame->data[1], height*width*sizeof(uchar)/2);
 					memcpy(pOutFrame->data[2], pFrame->data[2], height*width*sizeof(uchar)/2);
 					*/
-					memcpy(pOutFrame->data[0], tmp.data, pFrame->height*pFrame->linesize[0]);
-					memcpy(pOutFrame->data[1], pFrame->data[1], pFrame->height*pFrame->linesize[1]/2);
-					memcpy(pOutFrame->data[2], pFrame->data[2], pFrame->height*pFrame->linesize[2]/2);
+					av_frame_copy(pOutFrame, pFrame);
+					memcpy(pOutFrame->data[0], tmp.data, sizeof(pFrame->data[0]));
+					//memcpy(pOutFrame->data[1], pFrame->data[1], pFrame->height*pFrame->linesize[1]/2);
+					//memcpy(pOutFrame->data[2], pFrame->data[2], pFrame->height*pFrame->linesize[2]/2);
+					/*
 					pOutFrame->linesize[0] = pFrame->linesize[0];
 					pOutFrame->linesize[1] = pFrame->linesize[1];
 					pOutFrame->linesize[2] = pFrame->linesize[2];
+					*/
 					pOutFrame->pts = ++cnt;
 					encode(pOutCodeCtx, pOutFrame, pOutPacket, destFile);
 				}
