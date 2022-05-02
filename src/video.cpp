@@ -158,6 +158,7 @@ int main(int argc, char* argv[])
 	std::ofstream destFile;
 	std::ifstream fkey;
 	std::string key;
+	AVDictionary *opt = NULL;
 
 	int write=0;
 	if(argc >= 3)
@@ -232,8 +233,13 @@ int main(int argc, char* argv[])
 		//pOutCodeCtx->pix_fmt = pCodeCtx->pix_fmt;
 		pOutCodeCtx->pix_fmt = AV_PIX_FMT_YUV420P;
 		if(pOutCodec->id == AV_CODEC_ID_H264)
-			av_opt_set(pOutCodeCtx, "preset", "ultrafast", 0);
-		if(avcodec_open2(pOutCodeCtx, pOutCodec, NULL) < 0)
+		{
+			//av_opt_set(pOutCodeCtx, "preset", "veryslow", 0);
+			//av_opt_set_int(pOutCodeCtx, "crf", 18, 0);
+			av_dict_set(&opt, "preset", "slow", 0);
+			av_dict_set(&opt, "crf", "0.0", 0);
+		}
+		if(avcodec_open2(pOutCodeCtx, pOutCodec, &opt) < 0)
 		{
 			std::cerr << "Failed to open codec!" << std::endl;
 			return -1;
@@ -275,9 +281,9 @@ int main(int argc, char* argv[])
 					cv::Mat tmp;
 					int key_end = 0;
 					if((cnt+1)*size<=key.size())
-						tmp = steg(cv::Mat(pFrame->height, pFrame->width, CV_8U, pFrame->data[0]), key.substr(cnt*size, (cnt+1)*size), size);
+						tmp = steg(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pFrame->data[0]), key.substr(cnt*size, (cnt+1)*size), size);
 					else if(cnt*size<=key.size())
-						tmp = steg(cv::Mat(pFrame->height, pFrame->width, CV_8U, pFrame->data[0]), key.substr(cnt*size, key.size()), key.size()-cnt*size+1);
+						tmp = steg(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pFrame->data[0]), key.substr(cnt*size, key.size()), key.size()-cnt*size+1);
 					else
 						key_end = 1;
 					fflush(stdout);
@@ -299,8 +305,13 @@ int main(int argc, char* argv[])
 					*/
 					av_frame_copy(pOutFrame, pFrame);
 					if(!key_end)
+					{
 						//memcpy(pOutFrame->data[0], tmp.data, sizeof(pFrame->data[0]));
 						memcpy(pOutFrame->data[0], tmp.data, pFrame->height*pFrame->width*sizeof(uchar));
+						//std::cout << solve(cv::Mat(pOutFrame->height, pOutFrame->width, CV_8U, pOutFrame->data[0])) << std::endl;
+						//std::string dbg = solve(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pOutFrame->data[0]));
+						//std::cout << hamming_decode(dbg) << std::endl;
+					}
 					//memcpy(pOutFrame->data[1], pFrame->data[1], pFrame->height*pFrame->linesize[1]/2);
 					//memcpy(pOutFrame->data[2], pFrame->data[2], pFrame->height*pFrame->linesize[2]/2);
 					/*
@@ -309,6 +320,7 @@ int main(int argc, char* argv[])
 					pOutFrame->linesize[2] = pFrame->linesize[2];
 					*/
 					pOutFrame->pts = ++cnt;
+					//pOutFrame->pts = (int)((1/25.)*pCodeCtx->bit_rate*(++cnt));
 					encode(pOutCodeCtx, pOutFrame, pOutPacket, destFile);
 				}
 				else
