@@ -57,9 +57,11 @@ std::string solve(Mat img)
 	w = gsl_wavelet_alloc(gsl_wavelet_daubechies, 4);
 	work = gsl_wavelet_workspace_alloc(BLOCK_SIZE*BLOCK_SIZE);
 	img.convertTo(img, CV_64F, 1.0);
-	for(int i=0; i<img.rows/BLOCK_SIZE; i++)
+	int bncol = img.cols/BLOCK_SIZE;
+	int bnrow = img.rows/BLOCK_SIZE;
+	for(int i=0; i<bnrow; i++)
 	{
-		for(int j=0;j<img.cols/BLOCK_SIZE; j++)
+		for(int j=0;j<bncol; j++)
 		{
 			Rect roi(j*BLOCK_SIZE, i*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
 			Mat_<double> Block;// = img(roi);
@@ -74,8 +76,8 @@ std::string solve(Mat img)
 			double Si = S.at<double>(0);
 			//std::cout << S.at<double>(0) << ":" << ((int)floor((Si/Q)+0.5)%2) << std::endl;
 			if((int)floor((Si/Q)+0.5)%2) // read every bit hidden in blocks
-				tmp += (0x80 >> ((i*BLOCK_SIZE+j)%8));
-			if((i*BLOCK_SIZE+j)%8==7)
+				tmp += (0x80 >> ((i*bncol+j)%8));
+			if((i*bncol+j)%8==7)
 			{
 				res+=tmp;
 				if(!tmp)
