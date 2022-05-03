@@ -282,9 +282,9 @@ int main(int argc, char* argv[])
 					cv::Mat tmp;
 					int key_end = 0;
 					if((cnt+1)*size<=key.size())
-						tmp = steg(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pFrame->data[0]), key.substr(cnt*size, (cnt+1)*size), size);
+						tmp = steg(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width, key.substr(cnt*size, (cnt+1)*size), size);
 					else if(cnt*size<=key.size())
-						tmp = steg(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pFrame->data[0]), key.substr(cnt*size, key.size()), key.size()-cnt*size+1);
+						tmp = steg(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width, key.substr(cnt*size, key.size()), key.size()-cnt*size+1);
 					else
 						key_end = 1;
 					fflush(stdout);
@@ -319,8 +319,8 @@ int main(int argc, char* argv[])
 						//std::cout << solve(cv::Mat(pOutFrame->height, pOutFrame->width, CV_8U, pOutFrame->data[0])) << std::endl;
 						//struct SwsContext *pSwsCtx = sws_getContext(pOutFrame->width, pOutFrame->height, AV_PIX_FMT_YUV420P, pCodeCtx->width, pCodeCtx->height, AV_PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
 						//sws_scale(pSwsCtx, pOutFrame->data, pOutFrame->linesize, 0, pCodeCtx->height, pOutFrame->data, pOutFrame->linesize);
-						std::string dbg = solve(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pOutFrame->data[0]));
-						std::cout << hamming_decode(dbg) << std::endl;
+						//std::string dbg = solve(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pOutFrame->data[0]), pFrame->width);
+						//std::cout << hamming_decode(dbg) << std::endl;
 					}
 					//memcpy(pOutFrame->data[2], pFrame->data[2], pFrame->height*pFrame->linesize[2]/2);
 					/*
@@ -334,7 +334,7 @@ int main(int argc, char* argv[])
 				}
 				else
 				{
-					key += solve(cv::Mat(pFrame->height, pFrame->width, CV_8U, pFrame->data[0]));
+					key += solve(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width);
 				}
 				//cnt++;
 			}

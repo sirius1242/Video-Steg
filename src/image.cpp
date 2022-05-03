@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
 						std::istreambuf_iterator<char>());
 		//std::cout << hamming_encode(key) << std::endl;
 		key = hamming_encode(key);
-		res = steg(res, key, key.size()+1); // make steg function write \0 after key message
+		res = steg(res, res.cols, key, key.size()+1); // make steg function write \0 after key message
 		if(argc >= 3)
 		{
 			imwrite(argv[3], res);
@@ -46,7 +46,7 @@ int main(int argc, char* argv[])
 	else
 	{
 		std::cout << "decoding" << std::endl;
-		std::string key = solve(res);
+		std::string key = solve(res, res.cols);
 		key = hamming_decode(key);
 		std::cout << key << std::endl;
 	}

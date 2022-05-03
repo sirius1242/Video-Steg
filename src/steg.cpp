@@ -5,14 +5,14 @@ using namespace cv;;
 gsl_wavelet *w;
 gsl_wavelet_workspace *work;
 
-Mat steg(Mat img, std::string key, int keysize)
+Mat steg(Mat img, int width, std::string key, int keysize)
 {
 	int type=img.type();
 
 	w = gsl_wavelet_alloc(gsl_wavelet_daubechies, 4);
 	work = gsl_wavelet_workspace_alloc(BLOCK_SIZE*BLOCK_SIZE);
 	img.convertTo(img, CV_64F, 1.0);
-	int bncol = img.cols/BLOCK_SIZE;
+	int bncol = width/BLOCK_SIZE;
 	int bnrow = img.rows/BLOCK_SIZE;
 	for(int i=0; i<bnrow; i++)
 	{
@@ -49,7 +49,7 @@ Mat steg(Mat img, std::string key, int keysize)
 	return img;
 }
 
-std::string solve(Mat img)
+std::string solve(Mat img, int width)
 {
 	std::string res;
 	char tmp = 0;
@@ -57,7 +57,7 @@ std::string solve(Mat img)
 	w = gsl_wavelet_alloc(gsl_wavelet_daubechies, 4);
 	work = gsl_wavelet_workspace_alloc(BLOCK_SIZE*BLOCK_SIZE);
 	img.convertTo(img, CV_64F, 1.0);
-	int bncol = img.cols/BLOCK_SIZE;
+	int bncol = width/BLOCK_SIZE;
 	int bnrow = img.rows/BLOCK_SIZE;
 	for(int i=0; i<bnrow; i++)
 	{

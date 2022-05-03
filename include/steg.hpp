@@ -9,5 +9,5 @@
 #define BLOCK_SIZE 8
 #define Q 32
 
-cv::Mat steg(cv::Mat img, std::string key, int keysize);
-std::string solve(cv::Mat img);
+cv::Mat steg(cv::Mat img, int width, std::string key, int keysize);
+std::string solve(cv::Mat img, int width);
