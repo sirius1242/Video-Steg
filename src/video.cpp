@@ -6,6 +6,7 @@ extern "C"{
 #include<libavformat/avformat.h>
 #include<libswscale/swscale.h>
 #include<libavutil/opt.h>
+#include<libavutil/imgutils.h>
 }
 
 #include "steg.hpp"
@@ -207,7 +208,7 @@ int main(int argc, char* argv[])
 
 	int width = pCodeCtx->width;
 	int height = pCodeCtx->height;
-	int size = width/8*height/8;
+	int size = width/8*height/8/8;
 	if(write)
 	{
 		//pOutCodec = avcodec_find_encoder_by_name(pCodec->name);
@@ -307,12 +308,20 @@ int main(int argc, char* argv[])
 					if(!key_end)
 					{
 						//memcpy(pOutFrame->data[0], tmp.data, sizeof(pFrame->data[0]));
-						memcpy(pOutFrame->data[0], tmp.data, pFrame->height*pFrame->width*sizeof(uchar));
+						//memcpy(pOutFrame->data[0], tmp.reshape(0,1).data, pFrame->height*pFrame->linesize[0]);
+						//memcpy(pOutFrame->data[0], pFrame->data[0], pFrame->height*pFrame->linesize[0]);
+						av_image_copy_plane(pOutFrame->data[0], pOutFrame->linesize[0], tmp.data, pFrame->linesize[0], pFrame->width, pFrame->height);
+						/*
+						for(int i=0;i<pOutFrame->height;i++)
+							for(int j=0;j<pOutFrame->linesize[0];j++)
+								pOutFrame->data[0][i*pOutFrame->linesize[0]+j] = tmp.reshape(0,1).data[i*pOutFrame->linesize[0]+j];
+						*/
 						//std::cout << solve(cv::Mat(pOutFrame->height, pOutFrame->width, CV_8U, pOutFrame->data[0])) << std::endl;
-						//std::string dbg = solve(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pOutFrame->data[0]));
-						//std::cout << hamming_decode(dbg) << std::endl;
+						//struct SwsContext *pSwsCtx = sws_getContext(pOutFrame->width, pOutFrame->height, AV_PIX_FMT_YUV420P, pCodeCtx->width, pCodeCtx->height, AV_PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
+						//sws_scale(pSwsCtx, pOutFrame->data, pOutFrame->linesize, 0, pCodeCtx->height, pOutFrame->data, pOutFrame->linesize);
+						std::string dbg = solve(cv::Mat(pFrame->height, pFrame->width, CV_8UC1, pOutFrame->data[0]));
+						std::cout << hamming_decode(dbg) << std::endl;
 					}
-					//memcpy(pOutFrame->data[1], pFrame->data[1], pFrame->height*pFrame->linesize[1]/2);
 					//memcpy(pOutFrame->data[2], pFrame->data[2], pFrame->height*pFrame->linesize[2]/2);
 					/*
 					pOutFrame->linesize[0] = pFrame->linesize[0];
@@ -327,6 +336,7 @@ int main(int argc, char* argv[])
 				{
 					key += solve(cv::Mat(pFrame->height, pFrame->width, CV_8U, pFrame->data[0]));
 				}
+				//cnt++;
 			}
 		}
 	}
