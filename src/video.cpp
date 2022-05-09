@@ -233,12 +233,12 @@ int main(int argc, char* argv[])
 		pOutCodeCtx->max_b_frames = pCodeCtx->max_b_frames;
 		//pOutCodeCtx->pix_fmt = pCodeCtx->pix_fmt;
 		pOutCodeCtx->pix_fmt = AV_PIX_FMT_YUV420P;
-		if(pOutCodec->id == AV_CODEC_ID_H264)
+		if(pOutCodec->id == AV_CODEC_ID_H264||pOutCodec->id == AV_CODEC_ID_H265)
 		{
 			//av_opt_set(pOutCodeCtx, "preset", "veryslow", 0);
 			//av_opt_set_int(pOutCodeCtx, "crf", 18, 0);
 			av_dict_set(&opt, "preset", "slow", 0);
-			av_dict_set(&opt, "crf", "0.0", 0);
+			av_dict_set(&opt, "crf", "1.0", 0); // crf 0 will cause pixfmt became 4:4:4, so use 1 to ensure yuv420p and get least compress
 		}
 		if(avcodec_open2(pOutCodeCtx, pOutCodec, &opt) < 0)
 		{
