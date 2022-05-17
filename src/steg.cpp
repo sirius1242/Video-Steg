@@ -80,12 +80,14 @@ std::string solve(Mat img, int width)
 			if((i*bncol+j)%8==7)
 			{
 				res+=tmp;
+				/*
 				if(!tmp)
 				{
 					gsl_wavelet_free(w);
 					gsl_wavelet_workspace_free(work);
 					return res;
 				}
+				*/
 				tmp = 0;
 			}
 		}
