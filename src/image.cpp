@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		std::cout << "decoding" << std::endl;
+		std::cerr << "decoding" << std::endl;
 		std::string key = solve(res, res.cols);
 		key = hamming_decode(key);
 		std::cout << key << std::endl;

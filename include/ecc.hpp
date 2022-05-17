@@ -11,3 +11,5 @@ const int err_tab[12]={-1, -1, 7, -1, 6, 5, 4, -1, 3, 2, 1, 0};
 
 std::string hamming_encode(std::string);
 std::string hamming_decode(std::string);
+std::string hamming_encode8(std::string);
+std::string hamming_decode8(std::string);
