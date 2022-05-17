@@ -23,6 +23,8 @@ file(GLOB COMMON
         "src/steg.cpp"
         )
 
+configure_file("src/cmp.py" ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+
 add_executable(steg ${COMMON} "src/image.cpp")
 target_link_libraries(steg ${OpenCV_LIBS} ${GSL_LIBS})
 
