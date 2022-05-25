@@ -2,9 +2,9 @@ import subprocess
 import sys
 
 cmd = sys.argv[2] + " " + sys.argv[3]
-a = subprocess.check_output(cmd, shell=True)
+a = subprocess.check_output(cmd, shell=True).strip()
 with open(sys.argv[1], 'rb') as fp:
-	b = fp.read()
+	b = fp.read().strip()
 
 total = min(len(a), len(b))
 same = 0

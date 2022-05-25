@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
 		fkey.open(argv[2]);
 		//key((std::istreambuf_iterator<char>(fkey)), std::istreambuf_iterator<char>());
 		fkey >> key;
-		key = hamming_encode(key);
+		key = hamming_encode8(key);
 		pOutFrame = av_frame_alloc();
 		if(!pOutFrame)
 		{
@@ -352,7 +352,7 @@ int main(int argc, char* argv[])
 	}
 	else
 	{
-		key = hamming_decode(key);
+		key = hamming_decode8(key);
 		std::cout << key << std::endl;
 	}
 
