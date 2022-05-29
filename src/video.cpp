@@ -531,8 +531,8 @@ int main(int argc, char* argv[])
 			}
 			if(write)
 			{
-				av_write_trailer(pOutFmtCtx);
 				encode(pOutCodeCtx, NULL, pOutPacket, out_stream, pOutFmtCtx);
+				av_write_trailer(pOutFmtCtx);
 			}
 			/*
 			if(write)
