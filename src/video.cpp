@@ -155,17 +155,20 @@ int main(int argc, char* argv[])
 			std::cerr << "Could not create output context" << std::endl;
 			return AVERROR_UNKNOWN;
 		}
+	}
 
-		for(int i=0;i < pFormatCtx->nb_streams; i++) {
-			AVStream *out_stream;
-			AVStream *in_stream = pFormatCtx->streams[i];
-			AVCodecParameters *in_codecpar = in_stream->codecpar;
-			if(in_codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
-			   in_codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
-			   in_codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-				   continue;
-			   }
+	for(int i=0;i < pFormatCtx->nb_streams; i++) {
+		AVStream *out_stream;
+		AVStream *in_stream = pFormatCtx->streams[i];
+		AVCodecParameters *in_codecpar = in_stream->codecpar;
+		if(in_codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
+			in_codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+			in_codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+				continue;
+		}
 
+		if(write)
+		{
 			out_stream = avformat_new_stream(pOutFmtCtx, NULL);
 			if(!out_stream)
 			{
@@ -248,50 +251,56 @@ int main(int argc, char* argv[])
 				std::cerr << "can't get frame buffer!" << std::endl;
 				return -1;
 			}
-			int cnt = 0;
-			while(av_read_frame(pFormatCtx, &packet) >= 0)
+		}
+		int cnt = 0;
+		while(av_read_frame(pFormatCtx, &packet) >= 0)
+		{
+			if(packet.stream_index == videostream)
 			{
-				if(packet.stream_index == videostream)
+				avcodec_send_packet(pCodeCtx, &packet);
+				while(avcodec_receive_frame(pCodeCtx, pFrame) == 0)
 				{
-					avcodec_send_packet(pCodeCtx, &packet);
-					while(avcodec_receive_frame(pCodeCtx, pFrame) == 0)
+					if(write)
 					{
-						if(write)
-						{
-							cv::Mat tmp;
-							int key_end = 0;
-							if((cnt+1)*size<=key.size())
-								tmp = steg(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width, key.substr(cnt*size, (cnt+1)*size), size);
-							else if(cnt*size<=key.size())
-								tmp = steg(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width, key.substr(cnt*size, key.size()), key.size()-cnt*size+1);
-							else
-								key_end = 1;
-							fflush(stdout);
-							if(av_frame_make_writable(pOutFrame) < 0)
-							{
-								std::cerr << "can't make frame writable!" << std::endl;
-								return -1;
-							}
-							av_frame_copy(pOutFrame, pFrame);
-							if(!key_end)
-								av_image_copy_plane(pOutFrame->data[0], pOutFrame->linesize[0], tmp.data, pFrame->linesize[0], pFrame->width, pFrame->height);
-							pOutFrame->pts = pFrame->best_effort_timestamp;
-							encode(pOutCodeCtx, pOutFrame, pOutPacket, out_stream, pOutFmtCtx);
-							av_packet_unref(pOutPacket);
-						}
+						cv::Mat tmp;
+						int key_end = 0;
+						if((cnt+1)*size<=key.size())
+							tmp = steg(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width, key.substr(cnt*size, (cnt+1)*size), size);
+						else if(cnt*size<=key.size())
+							tmp = steg(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width, key.substr(cnt*size, key.size()), key.size()-cnt*size+1);
 						else
+							key_end = 1;
+						fflush(stdout);
+						if(av_frame_make_writable(pOutFrame) < 0)
 						{
-							key += solve(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width);
+							std::cerr << "can't make frame writable!" << std::endl;
+							return -1;
 						}
-						cnt++;
+						av_frame_copy(pOutFrame, pFrame);
+						if(!key_end)
+							av_image_copy_plane(pOutFrame->data[0], pOutFrame->linesize[0], tmp.data, pFrame->linesize[0], pFrame->width, pFrame->height);
+						pOutFrame->pts = pFrame->best_effort_timestamp;
+						encode(pOutCodeCtx, pOutFrame, pOutPacket, out_stream, pOutFmtCtx);
+						av_packet_unref(pOutPacket);
 					}
+					else
+					{
+						key += solve(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width);
+					}
+					cnt++;
 				}
 			}
-			if(write)
-			{
-				encode(pOutCodeCtx, NULL, pOutPacket, out_stream, pOutFmtCtx);
-				av_write_trailer(pOutFmtCtx);
-			}
+		}
+		if(write)
+		{
+			encode(pOutCodeCtx, NULL, pOutPacket, out_stream, pOutFmtCtx);
+			av_write_trailer(pOutFmtCtx);
+		}
+		else
+		{
+			key = hamming_decode8(key);
+			std::cout << key << std::endl;
+		}
 			/*
 			if(write)
 			{
@@ -304,13 +313,8 @@ int main(int argc, char* argv[])
 				av_packet_free(&pOutPacket);
 			}
 			*/
-		}
 	}
-	else
-	{
-		key = hamming_decode8(key);
-		std::cout << key << std::endl;
-	}
+
 
 	av_packet_unref(&packet);
 	return 0;
