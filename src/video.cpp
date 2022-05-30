@@ -12,23 +12,6 @@ extern "C"{
 
 #include "steg.hpp"
 
-//AVFormatContext *pOutFmtCtx = NULL;
-//const AVOutputFormat *pOutFmt = NULL;
-//AVCodecParameters *pOutCodecPara = NULL;
-//AVCodecParameters *pCodecPara = NULL;
-//AVCodecContext *pOutCodeCtx = NULL;
-//AVCodecContext *pCodeCtx = NULL;
-//const AVCodec *pOutCodec = NULL;
-//const AVCodec *pCodec = NULL;
-//AVFrame *pOutFrame = NULL;
-//AVStream *pOutStream = NULL;
-/*
-int stream_index = 0;
-int *stream_mapping = NULL;
-int stream_mapping_size = 0;
-*/
-
-
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt, const char *tag)
 {
     AVRational *time_base = &fmt_ctx->streams[pkt->stream_index]->time_base;
@@ -48,27 +31,14 @@ static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt, cons
 
 int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVStream *st, AVFormatContext *ofmt_ctx)
 {
-	//AVStream *in_stream, *out_stream;
 	int ret;
-	//AVPacket pkt;
-
-	/*
-	in_stream = ifmt_ctx->streams[pkt->stream_index];
-	if(pkt->stream_index >= stream_mapping_size ||
-	   stream_mapping[pkt->stream_index] < 0) {
-		   av_packet_unref(pkt);
-		   return 0;
-	   }
-	   */
 
 	av_packet_unref(pkt);
 	if(frame)
 	{
-		//std::cout << "Send frame " << frame->pts << PRId64 << std::endl;
 		printf("Send frame %3" PRId64 "\n", frame->pts);
 	}
 
-	//avcodec_flush_buffers(enc_ctx);
 	ret = avcodec_send_frame(enc_ctx, frame);
 	if(ret < 0)
 	{
@@ -76,11 +46,6 @@ int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVStream *st,
 		exit(1);
 	}
 
-	/*
-	av_init_packet(&pkt);
-	pkt.data = NULL;
-	pkt.size = 0;
-	*/
 	while(ret >= 0)
 	{
 		ret = avcodec_receive_packet(enc_ctx, pkt);
@@ -93,100 +58,16 @@ int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVStream *st,
 		}
 
 		printf("Write packet %3" PRId64 " (size=%5d)\n", pkt->pts, pkt->size);
-		//std::cout << "Writing packet " << pkt->pts << PRId64 << "(size=" << pkt->size << ")" << std::endl;
-		//destFile << *pkt->data;
-		//destFile.write(reinterpret_cast<char *>(pkt->data), pkt->size);
-		//pkt->stream_index = stream_mapping[pkt->stream_index];
 		pkt->stream_index = st->index;
 		av_packet_rescale_ts(pkt, enc_ctx->time_base, st->time_base);
-		//out_stream = ofmt_ctx->streams[pkt->stream_index];
-		//log_packet(ifmt_ctx, pkt, "in");
 		log_packet(ofmt_ctx, pkt, "out");
 		if(ret = av_interleaved_write_frame(ofmt_ctx, pkt) < 0)
 		{
 			std::cerr << "Error muxing packet" << std::endl;
 			exit(1);
 		}
-		//av_packet_unref(pkt);
 	}
 	return ret == AVERROR_EOF ? 1:0;
-}
-int wfile_init(char filename[], int height, int width, int bitrate, int fpsrate, const AVCodec *pCodec, AVCodecContext *pCodeCtx)
-{
-	/*
-	pOutFmt = av_guess_format(nullptr, filename, nullptr);
-	if(!pOutFmt)
-	{
-		std::cerr << "can't create output format!" << std::endl;
-		return -1;
-	}
-	if(avformat_alloc_output_context2(&pOutFmtCtx, pOutFmt, nullptr, filename))
-	{
-		std::cerr << "can't create output context!" << std::endl;
-		return -1;
-	}
-	*/
-
-	//pOutCodec = avcodec_find_encoder(pOutFmt->video_codec);
-	/*
-	pOutStream = avformat_new_stream(pOutFmtCtx, pOutCodec);
-	if(!pOutStream)
-	{
-		std::cerr << "can't find format!" << std::endl;
-		return -1;
-	}
-	*/
-	/*
-	pOutStream->codecpar->codec_id = pOutFmt->video_codec;
-	pOutStream->codecpar->codec_id = pOutCodeCtx->codec_id;
-	pOutStream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-	pOutStream->codecpar->width = width;
-	pOutStream->codecpar->height = height;
-	pOutStream->codecpar->format = AV_PIX_FMT_YUV420P;
-	pOutStream->codecpar->bit_rate = bitrate*1000;
-
-	avcodec_parameters_to_context(pOutCodeCtx, pOutStream->codecpar);
-	pOutCodeCtx->time_base = {1, fpsrate};
-	pOutCodeCtx->max_b_frames = 2;
-	pOutCodeCtx->gop_size = 12;
-	*/
-	//if(pOutStream->codecpar->codec_id == AV_CODEC_ID_H264)
-	/*
-	if(pOutFmtCtx->oformat->flags & AVFMT_GLOBALHEADER)
-	{
-		pOutCodeCtx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
-	}
-	avcodec_parameters_from_context(pOutStream->codecpar, pOutCodeCtx);
-	*/
-	/*
-	if(!(pOutFmt->flags & AVFMT_NOFILE))
-		if(avio_open(&pOutFmtCtx->pb, filename, AVIO_FLAG_WRITE) < 0)
-		{
-			std::cerr << "Failed to open file!" << std::endl;
-			return -1;
-		}
-	if(avformat_write_header(pOutFmtCtx, NULL) < 0)
-	{
-		std::cerr << "Failed to write header!" << std::endl;
-		return -1;
-	}
-
-	av_dump_format(pOutFmtCtx, 0, filename, 1);
-	*/
-	return 0;
-	/*
-	avformat_alloc_output_context2(&pOutFmtCtx, 0, "mp4", filename);
-	if(!pOutFmtCtx)
-	{
-		std::cerr << "Could not open video file!" << std::endl;
-		return -1;
-	}
-	pOutFmt = pOutFmtCtx->oformat;
-	if(pOutFmt->video_codec != AV_CODEC_ID_NULL)
-	{
-		if(!)
-	}
-	*/
 }
 
 int main(int argc, char* argv[])
@@ -268,21 +149,12 @@ int main(int argc, char* argv[])
 	int size = width/8*height/8/8;
 	if(write)
 	{
-		//pOutCodec = avcodec_find_encoder_by_name(pCodec->name);
 		avformat_alloc_output_context2(&pOutFmtCtx, NULL, NULL, argv[3]);
 		if(!pOutFmtCtx)
 		{
 			std::cerr << "Could not create output context" << std::endl;
 			return AVERROR_UNKNOWN;
 		}
-
-		/*
-		stream_mapping_size = pFormatCtx->nb_streams;
-		stream_mapping = (int*)av_calloc(stream_mapping_size, sizeof(*stream_mapping));
-		if(!stream_mapping){
-			return AVERROR(ENOMEM);
-		}
-		*/
 
 		for(int i=0;i < pFormatCtx->nb_streams; i++) {
 			AVStream *out_stream;
@@ -291,11 +163,8 @@ int main(int argc, char* argv[])
 			if(in_codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
 			   in_codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
 			   in_codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-				   //stream_mapping[i] = -1;
 				   continue;
 			   }
-
-			//stream_mapping[i] = stream_index++;
 
 			out_stream = avformat_new_stream(pOutFmtCtx, NULL);
 			if(!out_stream)
@@ -323,38 +192,21 @@ int main(int argc, char* argv[])
 				std::cerr << "can't create codec context!" << std::endl;
 				return -1;
 			}
-			/*
-			if(avcodec_parameters_to_context(pOutCodeCtx, pOutFmtCtx->streams[i]->codecpar)<0)
-			{
-				std::cerr << "can't convert parameters to context!" << std::endl;
-				return -1;
-			}
-			*/
 			pOutCodeCtx->width = pCodeCtx->width;
 			pOutCodeCtx->height = pCodeCtx->height;
-			//pOutCodeCtx->bit_rate = pCodeCtx->bit_rate;
 			pOutCodeCtx->sample_aspect_ratio = pCodeCtx->sample_aspect_ratio;
-			//pOutCodeCtx->time_base = (AVRational){1, in_stream->time_base};
-			//pOutCodeCtx->time_base = (AVRational){1, 25};
 			pOutCodeCtx->time_base = in_stream->time_base;
-			//pOutCodeCtx->time_base = av_inv_q(pCodeCtx->framerate);
-			//pOutCodeCtx->framerate = (AVRational){25, 1};
 			pOutCodeCtx->gop_size = pCodeCtx->gop_size;
 			pOutCodeCtx->max_b_frames = pCodeCtx->max_b_frames;
-			//pOutCodeCtx->pix_fmt = pCodeCtx->pix_fmt;
 			if(pOutCodec->pix_fmts)
 				pOutCodeCtx->pix_fmt = pOutCodec->pix_fmts[0];
 			else
 				pOutCodeCtx->pix_fmt = pCodeCtx->pix_fmt;
-			//pOutCodeCtx->pix_fmt = AV_PIX_FMT_YUV420P;
 			if(pOutCodec->id == AV_CODEC_ID_H264||pOutCodec->id == AV_CODEC_ID_H265)
 			{
-				//av_opt_set(pOutCodeCtx, "preset", "veryslow", 0);
-				//av_opt_set_int(pOutCodeCtx, "crf", 18, 0);
 				av_dict_set(&opt, "preset", "slow", 0);
 				av_dict_set(&opt, "crf", "1.0", 0); // crf 0 will cause pixfmt became 4:4:4, so use 1 to ensure yuv420p and get least compress
 			}
-			//if(avcodec_open2(pOutCodeCtx, pOutCodec, &opt) < 0)
 			if(avcodec_open2(pOutCodeCtx, pOutCodec, &opt) < 0)
 			{
 				std::cerr << "Failed to open codec!" << std::endl;
@@ -379,10 +231,7 @@ int main(int argc, char* argv[])
 				std::cerr << "Error occurred when opening output file" << std::endl;
 				return -1;
 			}
-			//wfile_init(argv[2], height, width, pCodeCtx->bit_rate, pCodeCtx->time_base.den, pCodec, pCodeCtx);
-			//destFile.open(argv[3], std::ios::binary);
 			fkey.open(argv[2]);
-			//key((std::istreambuf_iterator<char>(fkey)), std::istreambuf_iterator<char>());
 			fkey >> key;
 			key = hamming_encode8(key);
 			pOutFrame = av_frame_alloc();
@@ -391,7 +240,6 @@ int main(int argc, char* argv[])
 				std::cerr << "can't allocate video frame!" << std::endl;
 				return -1;
 			}
-			//pOutFrame->format = pCodeCtx->pix_fmt;
 			pOutFrame->format = pOutCodeCtx->pix_fmt;
 			pOutFrame->width = width;
 			pOutFrame->height = height;
@@ -408,8 +256,6 @@ int main(int argc, char* argv[])
 					avcodec_send_packet(pCodeCtx, &packet);
 					while(avcodec_receive_frame(pCodeCtx, pFrame) == 0)
 					{
-						//steg(cv::Mat(pFrame->data[0]), key, keysize);
-						//std::cout << width << "x" << height << std::endl;
 						if(write)
 						{
 							cv::Mat tmp;
@@ -421,110 +267,23 @@ int main(int argc, char* argv[])
 							else
 								key_end = 1;
 							fflush(stdout);
-							//av_init_packet(&OutPacket);
-							//OutPacket.data = NULL;
-							//OutPacket.size = 0;
 							if(av_frame_make_writable(pOutFrame) < 0)
 							{
 								std::cerr << "can't make frame writable!" << std::endl;
 								return -1;
 							}
-							/*
-							pOutFrame->data[0] = tmp.data;
-							pOutFrame->data[1] = pFrame->data[1];
-							pOutFrame->data[2] = pFrame->data[2];
-							memcpy(pOutFrame->data[0], tmp.data, height*width*sizeof(uchar));
-							memcpy(pOutFrame->data[1], pFrame->data[1], height*width*sizeof(uchar)/2);
-							memcpy(pOutFrame->data[2], pFrame->data[2], height*width*sizeof(uchar)/2);
-							*/
 							av_frame_copy(pOutFrame, pFrame);
 							if(!key_end)
-							{
-								//memcpy(pOutFrame->data[0], tmp.data, sizeof(pFrame->data[0]));
-								//memcpy(pOutFrame->data[0], tmp.reshape(0,1).data, pFrame->height*pFrame->linesize[0]);
-								//memcpy(pOutFrame->data[0], pFrame->data[0], pFrame->height*pFrame->linesize[0]);
 								av_image_copy_plane(pOutFrame->data[0], pOutFrame->linesize[0], tmp.data, pFrame->linesize[0], pFrame->width, pFrame->height);
-								/*
-								for(int i=0;i<pOutFrame->height;i++)
-									for(int j=0;j<pOutFrame->linesize[0];j++)
-										pOutFrame->data[0][i*pOutFrame->linesize[0]+j] = tmp.reshape(0,1).data[i*pOutFrame->linesize[0]+j];
-								*/
-								//std::cout << solve(cv::Mat(pOutFrame->height, pOutFrame->width, CV_8U, pOutFrame->data[0])) << std::endl;
-								//struct SwsContext *pSwsCtx = sws_getContext(pOutFrame->width, pOutFrame->height, AV_PIX_FMT_YUV420P, pCodeCtx->width, pCodeCtx->height, AV_PIX_FMT_YUV420P, SWS_FAST_BILINEAR, NULL, NULL, NULL);
-								//sws_scale(pSwsCtx, pOutFrame->data, pOutFrame->linesize, 0, pCodeCtx->height, pOutFrame->data, pOutFrame->linesize);
-								//std::string dbg = solve(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pOutFrame->data[0]), pFrame->width);
-								//std::cout << hamming_decode(dbg) << std::endl;
-							}
-							//memcpy(pOutFrame->data[2], pFrame->data[2], pFrame->height*pFrame->linesize[2]/2);
-							/*
-							pOutFrame->linesize[0] = pFrame->linesize[0];
-							pOutFrame->linesize[1] = pFrame->linesize[1];
-							pOutFrame->linesize[2] = pFrame->linesize[2];
-							*/
-							//pOutFrame->pts = cnt++;
 							pOutFrame->pts = pFrame->best_effort_timestamp;
-							//pOutFrame->pts = (int)((1/25.)*pCodeCtx->bit_rate*(++cnt));
 							encode(pOutCodeCtx, pOutFrame, pOutPacket, out_stream, pOutFmtCtx);
-							/*
-							AVStream *in_stream, *out_stream;
-							int ret;
-							//AVPacket pkt;
-
-							in_stream = pFormatCtx->streams[packet.stream_index];
-							if (packet.stream_index >= stream_mapping_size ||
-								stream_mapping[packet.stream_index] < 0) {
-								av_packet_unref(&packet);
-								continue;
-							}
-
-							if(pOutFrame)
-								//std::cout << "Send frame " << frame->pts << PRId64 << std::endl;
-								printf("Send frame %3" PRId64 "\n", pOutFrame->pts);
-
-							//avcodec_flush_buffers(enc_ctx);
-							ret = avcodec_send_frame(pOutCodeCtx, pOutFrame);
-							if(ret < 0)
-							{
-								std::cerr << "Error sending a frame for encoding: " << ret << std::endl;
-								exit(1);
-							}
-
-							while(ret >= 0)
-							{
-								ret = avcodec_receive_packet(pOutCodeCtx, pOutPacket);
-								if(ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-									continue;
-								else if(ret < 0)
-								{
-									std::cerr << "Error during encoding" << std::endl;
-									exit(1);
-								}
-
-								printf("Write packet %3" PRId64 " (size=%5d)\n", pOutPacket->pts, pOutPacket->size);
-								//std::cout << "Writing packet " << pkt->pts << PRId64 << "(size=" << pkt->size << ")" << std::endl;
-								//destFile << *pkt->data;
-								//destFile.write(reinterpret_cast<char *>(pkt->data), pkt->size);
-								pOutPacket->stream_index = stream_mapping[packet.stream_index];
-								out_stream = pOutFmtCtx->streams[packet.stream_index];
-
-								log_packet(pFormatCtx, pOutPacket, "in");
-								av_packet_rescale_ts(pOutPacket, in_stream->time_base, out_stream->time_base);
-								log_packet(pOutFmtCtx, pOutPacket, "out");
-								if(av_interleaved_write_frame(pOutFmtCtx, pOutPacket) < 0)
-								{
-									std::cerr << "Error muxing packet" << std::endl;
-									exit(1);
-								}
-								av_packet_unref(pOutPacket);
-							}
-								*/
 							av_packet_unref(pOutPacket);
 						}
 						else
 						{
 							key += solve(cv::Mat(pFrame->height, pFrame->linesize[0], CV_8UC1, pFrame->data[0]), pFrame->width);
 						}
-						//cnt++;
+						cnt++;
 					}
 				}
 			}
