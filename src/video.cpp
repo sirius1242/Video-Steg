@@ -62,13 +62,11 @@ int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVStream *st,
 	   */
 
 	av_packet_unref(pkt);
-	/*
 	if(frame)
 	{
 		//std::cout << "Send frame " << frame->pts << PRId64 << std::endl;
 		printf("Send frame %3" PRId64 "\n", frame->pts);
 	}
-	*/
 
 	//avcodec_flush_buffers(enc_ctx);
 	ret = avcodec_send_frame(enc_ctx, frame);
@@ -193,7 +191,6 @@ int wfile_init(char filename[], int height, int width, int bitrate, int fpsrate,
 
 int main(int argc, char* argv[])
 {
-	const AVOutputFormat *pOutFmt = NULL;
 	AVFormatContext *pFormatCtx = NULL;
 	int i, videostream;
 	AVCodecParameters *pCodecPara = NULL;
@@ -287,8 +284,6 @@ int main(int argc, char* argv[])
 		}
 		*/
 
-		pOutFmt = pOutFmtCtx->oformat;
-
 		for(int i=0;i < pFormatCtx->nb_streams; i++) {
 			AVStream *out_stream;
 			AVStream *in_stream = pFormatCtx->streams[i];
@@ -339,8 +334,9 @@ int main(int argc, char* argv[])
 			pOutCodeCtx->height = pCodeCtx->height;
 			//pOutCodeCtx->bit_rate = pCodeCtx->bit_rate;
 			pOutCodeCtx->sample_aspect_ratio = pCodeCtx->sample_aspect_ratio;
-			//pOutCodeCtx->time_base = av_inv_q(pCodeCtx->framerate);
-			pOutCodeCtx->time_base = (AVRational){1, pCodeCtx->time_base.den};
+			//pOutCodeCtx->time_base = (AVRational){1, in_stream->time_base};
+			//pOutCodeCtx->time_base = (AVRational){1, 25};
+			pOutCodeCtx->time_base = in_stream->time_base;
 			//pOutCodeCtx->time_base = av_inv_q(pCodeCtx->framerate);
 			//pOutCodeCtx->framerate = (AVRational){25, 1};
 			pOutCodeCtx->gop_size = pCodeCtx->gop_size;
