@@ -161,12 +161,15 @@ int main(int argc, char *argv[])
 			AVStream *out_stream;
 			AVStream *in_stream = pFormatCtx->streams[i];
 			AVCodecParameters *in_codecpar = in_stream->codecpar;
+			/*
 			if (in_codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
 				in_codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
 				in_codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
 			{
+			*/
+			if(in_codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
 				continue;
-			}
+			//}
 
 			out_stream = avformat_new_stream(pOutFmtCtx, NULL);
 			if (!out_stream)
