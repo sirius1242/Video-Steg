@@ -22,9 +22,11 @@ extern "C"{
 //const AVCodec *pCodec = NULL;
 //AVFrame *pOutFrame = NULL;
 //AVStream *pOutStream = NULL;
+/*
 int stream_index = 0;
 int *stream_mapping = NULL;
 int stream_mapping_size = 0;
+*/
 
 
 static void log_packet(const AVFormatContext *fmt_ctx, const AVPacket *pkt, const char *tag)
@@ -60,11 +62,13 @@ int encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt, AVStream *st,
 	   */
 
 	av_packet_unref(pkt);
+	/*
 	if(frame)
 	{
 		//std::cout << "Send frame " << frame->pts << PRId64 << std::endl;
 		printf("Send frame %3" PRId64 "\n", frame->pts);
 	}
+	*/
 
 	//avcodec_flush_buffers(enc_ctx);
 	ret = avcodec_send_frame(enc_ctx, frame);
@@ -275,11 +279,13 @@ int main(int argc, char* argv[])
 			return AVERROR_UNKNOWN;
 		}
 
+		/*
 		stream_mapping_size = pFormatCtx->nb_streams;
 		stream_mapping = (int*)av_calloc(stream_mapping_size, sizeof(*stream_mapping));
 		if(!stream_mapping){
 			return AVERROR(ENOMEM);
 		}
+		*/
 
 		pOutFmt = pOutFmtCtx->oformat;
 
@@ -290,11 +296,11 @@ int main(int argc, char* argv[])
 			if(in_codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
 			   in_codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
 			   in_codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
-				   stream_mapping[i] = -1;
+				   //stream_mapping[i] = -1;
 				   continue;
 			   }
 
-			stream_mapping[i] = stream_index++;
+			//stream_mapping[i] = stream_index++;
 
 			out_stream = avformat_new_stream(pOutFmtCtx, NULL);
 			if(!out_stream)
@@ -309,22 +315,6 @@ int main(int argc, char* argv[])
 				return -1;
 			}
 			out_stream->codecpar->codec_tag = 0;
-			av_dump_format(pOutFmtCtx, 0, argv[3], 1);
-
-			if(!(pOutFmtCtx->flags & AVFMT_NOFILE))
-			{
-				if(avio_open(&pOutFmtCtx->pb, argv[3], AVIO_FLAG_WRITE))
-				{
-					std::cerr << "Could not open output file: " << argv[3] << std::endl;
-					return -1;
-				}
-			}
-
-			if(avformat_write_header(pOutFmtCtx, NULL))
-			{
-				std::cerr << "Error occurred when opening output file" << std::endl;
-				return -1;
-			}
 
 			pOutCodec = avcodec_find_encoder(pCodec->id);
 			if(!pOutCodec)
@@ -351,6 +341,7 @@ int main(int argc, char* argv[])
 			pOutCodeCtx->sample_aspect_ratio = pCodeCtx->sample_aspect_ratio;
 			//pOutCodeCtx->time_base = av_inv_q(pCodeCtx->framerate);
 			pOutCodeCtx->time_base = (AVRational){1, pCodeCtx->time_base.den};
+			//pOutCodeCtx->time_base = av_inv_q(pCodeCtx->framerate);
 			//pOutCodeCtx->framerate = (AVRational){25, 1};
 			pOutCodeCtx->gop_size = pCodeCtx->gop_size;
 			pOutCodeCtx->max_b_frames = pCodeCtx->max_b_frames;
@@ -380,6 +371,18 @@ int main(int argc, char* argv[])
 			}
 
 			out_stream->time_base = pOutCodeCtx->time_base;
+			av_dump_format(pOutFmtCtx, 0, argv[3], 1);
+			if(!(pOutFmtCtx->oformat->flags & AVFMT_NOFILE)) {
+				if(avio_open(&pOutFmtCtx->pb, argv[3], AVIO_FLAG_WRITE))
+				{
+					std::cerr << "Could not open output file" << argv[3] << std::endl;
+				}
+			}
+			if(avformat_write_header(pOutFmtCtx, NULL) < 0)
+			{
+				std::cerr << "Error occurred when opening output file" << std::endl;
+				return -1;
+			}
 			//wfile_init(argv[2], height, width, pCodeCtx->bit_rate, pCodeCtx->time_base.den, pCodec, pCodeCtx);
 			//destFile.open(argv[3], std::ios::binary);
 			fkey.open(argv[2]);
@@ -393,7 +396,7 @@ int main(int argc, char* argv[])
 				return -1;
 			}
 			//pOutFrame->format = pCodeCtx->pix_fmt;
-			pOutFrame->format = AV_PIX_FMT_YUV420P;
+			pOutFrame->format = pOutCodeCtx->pix_fmt;
 			pOutFrame->width = width;
 			pOutFrame->height = height;
 			if(av_frame_get_buffer(pOutFrame, 0) < 0)
